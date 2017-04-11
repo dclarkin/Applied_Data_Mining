@@ -1,0 +1,177 @@
+Title: Discovering Flourish and Blotts Best Sellers and Future Sales Opportunities  
+By: Dylan Clark
+Date: March 11th, 2017
+
+![According to Flourish and Blotts Sales data what is their best top 10 sellers? Additionally, what books would be good to display to book club members and others?](http://www.clipartkid.com/images/36/questions-and-answers-questions-and-answers-questions-and-answers-Xd7id6-clipart.jpg)
+
+Abstract: The following excerpt identifies the top 10 sellers of Flourish and Blotts book shop. It  also identifies books that should be displayed in the new extra display cases that Flourish and Blotts purchased specifically for Book Club books and Best Sellers. 
+
+![The Area of Opportunity & Data Set](http://cbs-outdoor.t-mark.com/assets/img/icon-opportunity.png_)
+
+Flourish & Blotts provided us a data set that contained a list of items that customers puchased throughout their transactions. The data set that was provided contained 92,108 unique transactions with 22,047 different books that had been purchased. The problem that Flourish & Blotts ran into was that they did not have a clean way to read and analyze the data. Thus, they turned to us to be able to read the data and analyze it for answers on questions they had. 
+
+Flourish and Blotts had the following questions:
+1. What were the top 15 sellling books from the data set?
+2. What books would be good to display in a newly found book club section
+3. What other books should be displayed in a display case at the front of the store?
+
+After given the set of questions from Flourish & Blotts book store I started to brainstorm about possible data cleansing activities and data mining techniques that could be used to one clean the data and two to answer the questions. After brainstorming I knew that I could use R to help clean the data as well as use it to association rule mining techniques to answer the questions that Flourish & Blotts had requested to be answered. From there I moved on to begin my plan of attack!
+
+![My Plan of Attack] (http://vignette2.wikia.nocookie.net/honorbound-juicebox/images/6/6a/Icon_Physical_Attack.png/revision/latest?cb=20140905084358)
+
+I started with using R to begin my data cleaning. I loaded the appropriate information that I needed into R.  Using R I started using some data cleansing technique to eliminate duplicate entries of data from the data set as well as mock the data into a more readable format. 
+
+##DATA PREPARATION
+```{r}
+getwd()
+setwd("C:/Users/dylan/Desktop/MBA/ADMSpring/Week_4/Data")
+
+library(Matrix)
+library(arules)
+library(sqldf)
+library(arulesViz)
+  
+BOOKBASKETS <- read.transactions("bookdata.tsv.gz", format="single",sep="\t", cols=c("userid", "title"), rm.duplicates=T)       	# Note: 5
+
+```
+
+
+After cleaning the data I was able to begin my basic exploration to find out some key elements that I needed to utlimately start getting to the meat of some of the major questions that 
+
+
+## Exploring the Data Set
+
+```{r}
+names(BOOKBASKETS)
+
+summary(BOOKBASKETS)
+
+#The top five selling books for the store
+#- Wild Animus
+#- The Lovely Bones: A Novel
+#- Shes Come Undone 
+#- The Da Vinci Code
+#- Harry Potter and the Sooccer's Stone
+
+#There are 92,108 unique trnasactions that have had 22,0447 different books purchased in them. The average transaction typically includes 11 books. 
+
+
+inspect(BOOKBASKETS[1:5]) #Examine the first five transactions
+
+BASKETSIZES<-size(BOOKBASKETS) #Calculate number of books purchased by "userID"
+
+BOOKFREQUENCY<-itemFrequency(BOOKBASKETS) #Calculate the support for each book title 
+
+BOOKCOUNT <- (BOOKFREQUENCY/sum(BOOKFREQUENCY))*sum(BASKETSIZES) 
+#   Get the absolute count of book occurrences. 
+
+BOOKBASKET_USE<-BOOKBASKETS[BASKETSIZES>1] #Only keep transactions with more than one book purchased. 
+
+```
+
+
+
+
+There are 92,108 unique trnasactions that have had 22,0447 different books purchased in them. The average transaction typically includes 11 books. 
+
+
+##THE BEST SELLERS
+```{r}
+
+itemFrequencyPlot(BOOKBASKETS, topN=15, type="absolute", ylab = "# of Puchases", xlab="Book Title", main="Flourish & Blotts Top 15 Sellers") 
+
+```
+
+
+
+
+
+
+
+![Oprah's Book Club](https://static.oprah.com/images/o2/201608/201608-obc-complete-list-01a.pdf)
+```{r}
+
+
+itemFrequencyPlot(BOOKBASKETS, topN=10, type="absolute", ylab = "# of Puchases", xlab="Book Title", main="Flourish & Blotts Top 10 Sellers") 
+
+
+
+```
+
+
+
+
+
+
+
+
+
+## FLOURISH AND BLOTTS TOP SELLERS
+
+```{r}
+
+FREQ_BOOKS_DATA_FRAME <- as.data.frame(itemFrequency(BOOKBASKETS))
+
+itemFrequencyPlot(BOOKBASKETS, topN=10, type="absolute", ylab = "# of Puchases", xlab="Book Title", main="Flourish & Blotts Top 10 Sellers") 
+
+```
+
+##IDENTIFYING BUYING PATTERNS
+
+```{r}
+
+BOOKBASKETS_RULES <- apriori(BOOKBASKETS, parameter = list(support = 0.0005, confidence = 0.8, minlen = 2))
+
+print(BOOKBASKETS_RULES)
+
+summary(BOOKBASKETS_RULES)
+
+BOOKBASKETS_RULES_SORTED <- sort(BOOKBASKETS_RULES, by = c("lift", "confidence"))
+
+BOOKBASKETS_RULES_SORTED_DF <- as(BOOKBASKETS_RULES_SORTED, "data.frame")
+
+write(FREQ_BOOKS_DATA_FRAME, file = "C:/Users/dylan/Desktop/MBA/ADMSpring/Week_4/BOOKBASKETS_SORTED.csv", sep =",", row.names = FALSE, quote = TRUE)
+
+```
+
+##Discovering the Displays
+```{r}
+
+WITHOUT_HARRY_BOOKBASKETS <- sqldf("SELECT * FROM BOOKBASKETS_RULES_SORTED_DF WHERE rules not like '%Harry Potter%'")
+WITHOUT_GREENMILE_BOOKBASKETS <- sqldf("SELECT * FROM WITHOUT_HARRY_BOOKBASKETS WHERE rules not like '%Green Mile%'")
+
+
+install.packages('arulesViz')
+
+SERIES_REMOVED_DF <- as(WITHOUT_GREENMILE_BOOKBASKETS, "data.frame")
+
+plot(SERIES_REMOVED_DF, method="grouped", control=list(k=30))
+
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+
+```
+
+```{r}
+
+
+
+```
+
+
+ that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
